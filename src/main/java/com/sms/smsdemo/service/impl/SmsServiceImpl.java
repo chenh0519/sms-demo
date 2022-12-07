@@ -86,6 +86,8 @@ public class SmsServiceImpl implements SmsService {
     private String post(String url, Map<String, Object> params) {
         String response = HttpUtil.createPost(url)
                 .form(params)
+                .header("Accept", "application/json;charset=utf-8")
+                .header("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
                 .setConnectionTimeout(smsProperties.getConnectionTimeout())
                 .setReadTimeout(smsProperties.getReadTimeout())
                 .execute()
