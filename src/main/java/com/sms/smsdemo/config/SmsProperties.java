@@ -18,11 +18,14 @@ public class SmsProperties {
 
     private String sign;
 
-    private String text;
-
     private String url;
 
     private Integer connectionTimeout;
 
     private Integer readTimeout;
+
+    private String text;
+
+    private String url1;
+    private String id1;
 }

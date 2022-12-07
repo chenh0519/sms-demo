@@ -2,6 +2,7 @@ package com.sms.smsdemo.service.impl;
 
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONUtil;
 import com.sms.smsdemo.config.SmsProperties;
@@ -14,6 +15,8 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +28,8 @@ import java.util.Map;
 @Slf4j
 @Service
 public class SmsServiceImpl implements SmsService {
+
+    private static final String ENCODING = "UTF-8";
 
 
     @Autowired
@@ -58,6 +63,40 @@ public class SmsServiceImpl implements SmsService {
             throw new RuntimeException(StrUtil.format("Request execute Error, e:{}", e.getMessage()));
         }
         log.info("[SMS] Single Send Response body:{}", body);
+
+        SmsResponseDTO response = this.response(body);
+        System.out.println(response);
+    }
+
+    /**
+     * value：抛出指定异常才会重试
+     * include：和value一样，默认为空，当exclude也为空时，默认所有异常
+     * exclude：指定不处理的异常
+     * maxAttempts：最大重试次数，默认3次
+     * backoff：重试等待策略，
+     * 默认使用@Backoff，@Backoff的value默认为1000L； 以毫秒为单位的延迟（默认 1000）
+     * multiplier（指定延迟倍数）默认为0，表示固定暂停1秒后进行重试，如果把multiplier设置为1.5，则第一次重试为2秒，第二次为3秒，第三次为4.5秒。
+     *
+     * @param mobile 手机号码
+     */
+    @Override
+    @Retryable(value = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000L, multiplier = 1.5), recover = "singleSendRecover")
+    public void dynamicSend(String mobile, String name, String enddate) throws UnsupportedEncodingException {
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("apikey", smsProperties.getApikey());
+        params.put("mobile", mobile);
+        params.put("tpl_id", smsProperties.getId1());
+        params.put("tpl_value", URLEncoder.encode("#name#", ENCODING) + "=" + URLEncoder.encode(name, ENCODING) + "&" + URLEncoder.encode("#enddate#", ENCODING) + "=" + URLEncoder.encode(enddate, ENCODING));
+
+        log.info("[SMS] Dynamic Send Request url:{}, params:{}", smsProperties.getUrl1(), params);
+        String body = null;
+        try {
+            body = this.post(smsProperties.getUrl1(), params);
+        } catch (Exception e) {
+            log.error("[SMS] Request execute Error, e:{}", ExceptionUtil.stacktraceToString(e));
+            throw new RuntimeException(StrUtil.format("Request execute Error, e:{}", e.getMessage()));
+        }
+        log.info("[SMS] Dynamic Send Response body:{}", body);
 
         SmsResponseDTO response = this.response(body);
         System.out.println(response);

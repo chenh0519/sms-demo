@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.io.UnsupportedEncodingException;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -29,6 +30,17 @@ public class SmsController {
     public void singleSend(@RequestParam String mobile) {
         threadPoolTaskExecutor.execute(() -> {
             smsService.singleSend(mobile);
+        });
+    }
+
+    @PostMapping("/dynamicSend")
+    public void singleSend(@RequestParam String mobile, @RequestParam String name, @RequestParam String enddate ) {
+        threadPoolTaskExecutor.execute(() -> {
+            try {
+                smsService.dynamicSend(mobile, name, enddate);
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
+            }
         });
     }
 }
